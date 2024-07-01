@@ -1,7 +1,18 @@
+### ADD TO THE README.md? ###
+# To run the default docker image on container:
+# 1. Download latest release or clone repo, and run this in the root folder of the download/clone: 
+# ```
+# docker compose up
+# ```  
+# 2. Go to packages, haxall, download the image from command line, then run: 
+# ```
+# docker run -v ./dbs:/app/haxall/dbs -p 8080:8080 --name haxall_run ghcr.io/haxall/haxall
+# ```
+
+
+
 # Look at documentation for docker compose: 
 # https://docs.docker.com/compose/compose-file/build
-
-# name: hx
 
 services:
   #main haxall application

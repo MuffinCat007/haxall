@@ -7,12 +7,14 @@ on:
     branches: 
       - main
     tags:
-      - v*
+      - '*'
+    paths:
+      - 'docker/**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  # This is equivalent to ${{ github.repository_owner }}/haxall
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/haxall
 
 jobs:
   build-and-publish-image:
@@ -20,20 +22,18 @@ jobs:
     permissions:
       contents: read
       packages: write
-      #what is an attestation?
-      attestations: write
 
-    # I don't know whether most of the below docker Github actions should be v1, v2, v3, v4, or main... I also don't know what those mean?
+    # Unsure whether most of the below docker Github actions should be v1, v2, v3, v4, or main...
     # Maybe find some info here: https://docs.docker.com/build/ci/github-actions/
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
+      - name: Checkout the repository
+        uses: actions/checkout@v4
 
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -44,22 +44,19 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      # unsure if this bit here is neccessary, since we are using "docker compose build", not "docker compose up --build"
-      - name: Remove and stop docker compose containers
-        run: docker compose -f docker-compose.yml down
-
-      # ABOUT THIS SECTION: https://stackoverflow.com/questions/53416685/docker-compose-tagging-and-pushing
-      # ABOUT 2: https://forums.docker.com/t/docker-compose-push-multiple-services-containers-to-docker-hub/121826
-      # - name: Build Docker image with docker compose
-      #   # docker compose [-f <arg>...] [options] [COMMAND] [ARGS...]
-      #   run: docker compose -f docker-compose.yml --progress=plain build --pull --push --no-cache --tag ${{ steps.meta.outputs.tags }} --label ${{ steps.meta.outputs.labels }}
         
-      #About Docker bake: https://docs.docker.com/reference/cli/docker/buildx/bake/#set
-      #Using github actions: https://github.com/docker/bake-action
-      - name: Build Docker image with docker bake
-        run: docker buildx bake -f docker-compose.yml --progress=plain --pull --push --no-cache --set haxall.tags="${{ steps.meta.outputs.tags }}" --set haxall.labels."${{ steps.meta.outputs.labels }}" haxall
-
-      # THIS SECTION IS NOT REQUIRED, SINCE THE ABOVE TWO SECTIONS HAVE THE --push OPTION      
-      # - name: Push Docker image
-      #   run: docker push ${{ env.REGISTRY }}/{{ env.IMAGE_NAME }}:latest
+      # Cannot do this using 'docker-bake' github action, because it doesn't allow for multiple tags/labels. They need to be done individually with each their own --set option: https://github.com/docker/bake-action
+      # Using https://github.com/docker/build-push-action
+      - name: Build and push image with Github Actions
+        uses: docker/build-push-action@v6
+        with:
+          #since the context is root, that's where the .dockerignore needs to be.
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          pull: true
+          no-cache: true
+          build-args: 
+            DB_NAME=haxall
+          file: ./docker/Dockerfile
