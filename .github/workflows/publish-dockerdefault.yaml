@@ -55,13 +55,13 @@ jobs:
       # But they can be done all at once with file outputs from the metadata step. 
       - name: Build & Push Docker image with Github Bake Action
         uses: docker/bake-action@v4
-          with:
-            #this is equivalent to 'context' in 'docker/build-push-action'
-            source: . 
-            push: true
-            pull: true
-            files: |
-              ./docker-compose.yml
-              ${{ steps.meta.outputs.bake-file-tags }}
-              ${{ steps.meta.outputs.bake-file-labels }}
-            targets: haxall
+        with:
+          #this is equivalent to 'context' in 'docker/build-push-action'
+          source: . 
+          push: true
+          pull: true
+          files: |
+            ./docker-compose.yml
+            ${{ steps.meta.outputs.bake-file-tags }}
+            ${{ steps.meta.outputs.bake-file-labels }}
+          targets: haxall
