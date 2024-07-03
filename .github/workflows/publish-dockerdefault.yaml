@@ -65,8 +65,3 @@ jobs:
               ${{ steps.meta.outputs.bake-file-tags }}
               ${{ steps.meta.outputs.bake-file-labels }}
             targets: haxall
-
-
-
-      - name: Build Docker image with docker bake
-        run: docker buildx bake -f docker-compose.yml -f ${{ steps.meta.outputs.bake-file-tags }} -f ${{ steps.meta.outputs.bake-file-labels }} --progress=plain --pull --push --no-cache haxall
