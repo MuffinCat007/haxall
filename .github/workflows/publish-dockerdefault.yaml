@@ -56,8 +56,7 @@ jobs:
       - name: Build & Push Docker image with Github Bake Action
         uses: docker/bake-action@v4
         with:
-          #this is equivalent to 'context' in 'docker/build-push-action'
-          source: . 
+          source: '{{defaultContext}}:./' 
           push: true
           pull: true
           files: |
