@@ -1,13 +1,15 @@
-# look at fan/.github/workflows/publish.yaml as the base example for this publish file
-# Also look here: https://dev.to/ken_mwaura1/automate-docker-image-builds-and-push-to-github-registry-using-github-actions-4h20
 name: Build and Publish Docker Image to GitHub Packages
 
+# This workflow is run on any push to main, or when the push includes a version tag.
+# Example: git push tag v1.0.0
 on:
   push: 
     branches: 
       - main
-    tags:
       - '*'
+    tags:
+      - 'v*'
+  # This enables a workflow to be triggered manually
   workflow_dispatch:
 
 env:
@@ -21,8 +23,6 @@ jobs:
       contents: read
       packages: write
 
-    # Unsure whether most of the below docker Github actions should be v1, v2, v3, v4, or main...
-    # Maybe find some info here: https://docs.docker.com/build/ci/github-actions/
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -37,24 +37,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # https://github.com/docker/metadata-action?tab=readme-ov-file#latest-tag
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v3
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        
-      # Cannot do this using 'docker-bake' github action, because it doesn't allow for multiple tags/labels. They need to be done individually with each their own --set option: https://github.com/docker/bake-action
-      # Using https://github.com/docker/build-push-action
-      - name: Build and push image with Github Actions
-        uses: docker/build-push-action@v6
-        with:
-          #since the context is root, that's where the .dockerignore needs to be.
-          context: .
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          push: true
-          pull: true
-          no-cache: true
-          build-args: 
-            DB_NAME=haxall
-          file: ./docker/Dockerfile
+          tags: |
+            # tag with version number upon "git push tag"
+            type=match,pattern=v(.*),group=1
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
+ 
+      # About Docker buildx bake: https://docs.docker.com/reference/cli/docker/buildx/bake/
+      # About Github Bake Action: https://github.com/docker/bake-action
+      # The github 'docker/bake-action' doesn't allow for multiple tags/labels. They need to be done individually with --set options each...
+      # But they can be done all at once with file outputs from the metadata step. 
+      - name: Build & Push Docker image with Github Bake Action
+        uses: docker/bake-action@v4
+          with:
+            #this is equivalent to 'context' in 'docker/build-push-action'
+            source: . 
+            push: true
+            pull: true
+            files: |
+              ./docker-compose.yml
+              ${{ steps.meta.outputs.bake-file-tags }}
+              ${{ steps.meta.outputs.bake-file-labels }}
+            targets: haxall
+
+
+
+      - name: Build Docker image with docker bake
+        run: docker buildx bake -f docker-compose.yml -f ${{ steps.meta.outputs.bake-file-tags }} -f ${{ steps.meta.outputs.bake-file-labels }} --progress=plain --pull --push --no-cache haxall
