@@ -59,7 +59,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           #since the context is root, that's where the .dockerignore needs to be.
-          context: .
+          context: "{{defaultContext}}:."
           file: ./docker/Dockerfile
           push: true
           pull: true
