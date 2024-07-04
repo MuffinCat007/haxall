@@ -905,6 +905,7 @@ class CoreLibTest : HaystackTest
     verifyEval(Str<|[10,20].getSafe(0..-2)|>, Obj?[n(10)])
     verifyEval(Str<|[10,20].getSafe(0..-3)|>, Obj?[,])
 
+    verifyEval(Str<|[].flatten|>, Obj?[,])
     verifyEval(Str<|[1, 2, [3, [4, 5]], 6].flatten|>, Obj?[n(1), n(2), n(3), n(4), n(5), n(6)])
     verifyEval(Str<|[{a:1}.toGrid, {a:2, b:3}.toGrid].flatten|>, Etc.makeMapsGrid(null, [["a":n(1)], ["a":n(2), "b":n(3)]]))
   }
@@ -1586,6 +1587,19 @@ class CoreLibTest : HaystackTest
     verifyEval("\"foo\".isStr", true);     verifyEval("true.isStr", false)
     verifyEval("(@foo).isRef", true);      verifyEval("3.isRef", false)
     verifyEval("\"end\".isKeyword", true); verifyEval("\"foo\".isKeyword", false)
+
+    verifyEval("4.isDuration", false)
+    verifyEval("true.isDuration", false)
+    verifyEval("4ft.isDuration", false)
+    verifyEval("4min.isDuration", true)
+
+    verifyEval("4.isHisGrid", false);
+    verifyEval("4.toGrid.isHisGrid", false)
+    verifyEval("{ts:now(), v0:123}.toGrid({hisStart:now()}).isHisGrid", false)
+    verifyEval("{ts:now(), v0:123}.toGrid({hisEnd:now()}).isHisGrid", false)
+    verifyEval("{ts:now()}.toGrid({hisStart:now(), hisEnd:now()}).isHisGrid", false)
+    verifyEval("{xx:now(), v0:123}.toGrid({hisStart:now(), hisEnd:now()}).isHisGrid", false)
+    verifyEval("{ts:now(), v0:123}.toGrid({hisStart:now(), hisEnd:now()}).isHisGrid", true)
   }
 
 //////////////////////////////////////////////////////////////////////////
