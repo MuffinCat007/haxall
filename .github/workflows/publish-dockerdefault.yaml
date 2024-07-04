@@ -5,7 +5,6 @@ on:
   push: 
     branches: 
       - main
-      - '*'
     tags:
       - 'v*'
   # This enables a workflow to be triggered manually
@@ -44,11 +43,11 @@ jobs:
           # flavor: |
           #   latest=true
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # tags: |
-          #   # tag with version number upon "git push tag"
-          #   type=match,pattern=v(.*),group=1
-          #   # set latest tag for default branch
-          #   type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+          tags: |
+            # tag with version number upon "git push tag"
+            type=match,pattern=v(.*),group=1
+            # set latest tag for default branch
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
       # The github 'docker/bake-action' runs into a registry error... 
       # Using https://github.com/docker/build-push-action
