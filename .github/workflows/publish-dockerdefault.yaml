@@ -64,4 +64,3 @@ jobs:
             ./docker-compose.yml
             ${{ steps.meta.outputs.bake-file-tags }}
             ${{ steps.meta.outputs.bake-file-labels }}
-          targets: haxall
