@@ -1,7 +1,6 @@
 name: Build and Publish Docker Image to GitHub Packages
 
-# This workflow is run on any push to main, or when the push includes a version tag.
-# Example: git push tag v1.0.0
+# This workflow is run on any push to main, or on push tag when it starts with a 'v'
 on:
   push: 
     branches: 
@@ -42,12 +41,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
+          # flavor: |
+          #   latest=true
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             # tag with version number upon "git push tag"
             type=match,pattern=v(.*),group=1
             # set latest tag for default branch
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
  
       # About Docker buildx bake: https://docs.docker.com/reference/cli/docker/buildx/bake/
       # About Github Bake Action: https://github.com/docker/bake-action
@@ -56,7 +57,7 @@ jobs:
       - name: Build & Push Docker image with Github Bake Action
         uses: docker/bake-action@v4
         with:
-          source: '{{defaultContext}}:./' 
+          source: "${{ github.server_url }}/${{ github.repository }}.git#${{ github.ref }}"
           push: true
           pull: true
           files: |
